@@ -13,18 +13,18 @@ using UnityEngine.EventSystems;
 
 public class UJoyStick : MonoBehaviour
 {
-
     [SerializeField]
-    Image joyStickOutSide;
+    Transform joyStickInside;
 
-    [SerializeField]
-    Image joyStickInside;
+    Transform joyStickOutSide;
+
+
+    Vector2 startPosition;
 
 
     void Awake()
     {
-        joyStickOutSide.enabled = false;
-        joyStickInside.enabled = false;
+        joyStickOutSide = transform;
     }
 
 	// Use this for initialization
@@ -38,33 +38,43 @@ public class UJoyStick : MonoBehaviour
     {
 	    if(Input.GetKeyDown(KeyCode.Mouse0))
         {
-            OnPointerDown();
+            OnPointerDown(new Vector2(Input.mousePosition.x,Input.mousePosition.y));
         }
         if(Input.GetKeyUp(KeyCode.Mouse0))
         {
-            OnPointerUp();
+            OnPointerUp(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
         }
         if(Input.GetKey(KeyCode.Mouse0))
         {
-            OnDrag();
+            OnDrag(new Vector2(Input.mousePosition.x, Input.mousePosition.y));
         }
 	}
 
 
-    void OnPointerDown()
+    void OnPointerDown(Vector2 position)
     {
-        joyStickOutSide.enabled = true;
-        joyStickInside.enabled = true;
+        startPosition =  position;
+        Debug.Log("OnPointerDown startPosition=" + startPosition);
     }
 
-    void OnPointerUp()
+    void OnPointerUp(Vector2 position)
     {
-        joyStickOutSide.enabled = false;
-        joyStickInside.enabled = false;
+        Debug.Log("OnPointerUp position=" + position);
     }
 
-    void OnDrag()
+    void OnDrag(Vector2 position)
     {
+        Debug.Log("OnDrag position=" + position);
 
+        Vector2 endPosition = position;
+        Vector2 offset = endPosition - startPosition;
+
+        Debug.Log("OnDrag offset=" + offset);
+
+        joyStickInside.localPosition += new Vector3(offset.x, offset.y, 0f);
+
+        Debug.Log("OnDrag joyStickInside.localPosition=" + joyStickInside.localPosition);
+
+        startPosition = position;
     }
 }
