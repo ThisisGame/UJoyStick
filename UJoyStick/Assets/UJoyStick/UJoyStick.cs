@@ -26,28 +26,37 @@ public class UJoyStick : MonoBehaviour
     //Move Callback,2D,x=x y=y
     public Action<Vector2> OnMove2D = null;
 
-    //Rotate Callback
-    public Action<Quaternion> OnRotate = null;
+    //Rotate Callback,3D,x=x y=z
+    public Action<Vector3> OnRotate3D = null;
+
+    //Rotate Callback,2D,x=x y=y
+    public Action<Vector3> OnRotate2D = null;
 
 
+    //Joystick movement is greater than the distance to trigger the move, the default setting is 0f
+    //摇杆移动大于这个距离，才会触发移动,默认设置为0f
+    public float minRadius = 0f;
 
+
+    //Rocker can only move within a specified range maxRadius, the default is the radius of the big picture;
+    //摇杆只能在maxRadius指定范围内移动,默认是大图的半径;
+    public float maxRadius = 0f;
+
+
+    //Record mouse start position;
+    //记录 鼠标开始位置;
     Vector2 startPosition;
 
-    //Move Speed
-    //移动速度
-    public float speed = 0.1f;
 
-    //cacheSize,if joystick move more ,call OnMove,default size=joystick size/2
-    //摇杆缓冲区，摇杆移动大于这个距离，才会触发移动,默认设置为摇杆的一半大小
-    public float cacheSize = 0f;
 
 
     void Awake()
     {
         joyStickOutSide = transform;
 
-        RectTransform joyStickInsideRect = joyStickInside.GetComponent<RectTransform>();
-        cacheSize= joyStickInsideRect.sizeDelta.x/2;
+        RectTransform joyStickOutsideRect = joyStickOutSide.GetComponent<RectTransform>();
+        maxRadius = joyStickOutsideRect.sizeDelta.x/2;
+
     }
 
 	// Use this for initialization
@@ -83,6 +92,7 @@ public class UJoyStick : MonoBehaviour
     void OnPointerUp(Vector2 position)
     {
         //Debug.Log("OnPointerUp position=" + position);
+        joyStickInside.localPosition = Vector3.zero;
     }
 
     void OnDrag(Vector2 position)
@@ -92,31 +102,72 @@ public class UJoyStick : MonoBehaviour
         Vector2 endPosition = position;
         Vector2 offset = endPosition - startPosition;
 
-        //Debug.Log("OnDrag offset=" + offset);
-
-        joyStickInside.localPosition += new Vector3(offset.x, offset.y, 0f);
-
-        //Debug.Log("OnDrag joyStickInside.localPosition=" + joyStickInside.localPosition);
-
-
-        //摇杆移动一定距离才生效;
-        if (OnMove2D != null)
-        {
-            OnMove2D(offset*speed);
-        }
-        if (OnMove3D != null)
-        {
-            OnMove3D(new Vector3(offset.x,0f,offset.y)*speed);
-        }
-
         startPosition = position;
-    }
 
 
-    
-    void OnGUI()
-    {
-        //GUILayout.Label("Mouse:"+ Input.mousePosition.ToString());
-        //GUILayout.Label("JoyStick:" + joyStickInside.localPosition);
+        Vector3 targetPosition= joyStickInside.localPosition + new Vector3(offset.x, offset.y, 0f);
+
+
+        //Joystick movement is greater than the distance to trigger the move, the default setting is half the size of the rocker
+        //摇杆移动一定距离才生效;
+
+        float distance = Vector2.Distance(Vector2.zero, targetPosition);
+
+        
+
+        Vector3 direction = targetPosition - Vector3.zero;
+
+
+
+
+        //Move
+        //位移;
+        if (distance > maxRadius)
+        {
+            targetPosition = direction * maxRadius;
+        }
+        else
+        {
+            joyStickInside.localPosition = targetPosition;
+
+            if (distance > minRadius)
+            {
+                //Debug.Log("OnMove");
+
+                if (OnMove2D != null)
+                {
+                    Vector3 dir = direction.normalized;
+                    OnMove2D(dir);
+                }
+                if (OnMove3D != null)
+                {
+                    Vector3 dir = new Vector3(direction.x, 0f, direction.y).normalized;
+                    OnMove3D(dir);
+                }
+            }
+        }
+
+
+        //Rotate
+        //旋转
+        if (OnRotate2D != null)
+        {
+            float x = direction.x == 0.0f ? 0.000001f : direction.x;
+            float y = direction.y == 0.0f ? 0.000001f : direction.y;
+
+            Vector3 dir = new Vector3(x,y, 0.000001f).normalized;
+            OnRotate2D(dir);
+        }
+        if (OnRotate3D != null)
+        {
+            float x = (direction.x == 0.0f ? 0.1f : direction.x);
+            float z = (direction.y == 0.0f ? 0.1f : direction.y);
+
+            Vector3 dir = new Vector3(x, 0.1f, z).normalized;
+
+            Debug.Log("dir=" + dir);
+            OnRotate3D(dir);
+        }
+
     }
 }
